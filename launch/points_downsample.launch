@@ -3,7 +3,7 @@
   <arg name="node_name" default="voxel_grid_filter" />
   <arg name="points_topic" default="/thorvald_001/velodyne_points" />
   <arg name="output_log" default="false" />
-  <arg name="leaf_size" default="3.0" />
+  <arg name="leaf_size" default="2.0" />
 
   <node pkg="ndt_localizer" name="$(arg node_name)" type="$(arg node_name)" output="screen">
     <param name="points_topic" value="$(arg points_topic)" />
