@@ -14,7 +14,7 @@
 
     <!--- MapLoader -->    
     <!--arg name="pcd_path"  default="$(find ndt_localizer)/map/kaist02.pcd"/-->
-    <arg name="pcd_path"  default="/home/ibrahim/neptune/catkin_ws/src/FAST_LIO/PCD/stage0_fence.pcd"/> 
+    <arg name="pcd_path"  default="/home/ibrahim/neptune/catkin_ws/src/FAST_LIO/PCD/stage0.pcd"/> 
     
     <arg name="map_topic" default="/points_map"/>
 
