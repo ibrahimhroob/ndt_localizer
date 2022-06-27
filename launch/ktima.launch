@@ -1,20 +1,21 @@
 <launch>
 
-  <!-- <param name="/use_sim_time" value="true" /> -->
-  
+  <param name="/use_sim_time" value="true" /> 
+
+  <!--- Run Rviz-->
+  <node pkg="rviz" type="rviz" name="rviz_ndt" args="-d $(find ndt_localizer)/cfgs/rock-auto.rviz" />
+
+  <!-- ######################### MapLoader ######################### -->
+  <arg name="map_id" default="ktima_march.pcd" />
+  <arg name="pcd_path"  default="$(find ndt_localizer)/map/$(arg map_id)"/> 
+
+  <!--Map initial pose-->
   <arg name="roll" default="0.0" />
   <arg name="pitch" default="0.0" />
   <arg name="yaw" default="0.0" />
   <arg name="x" default="0.0" />
   <arg name="y" default="0.0" />
   <arg name="z" default="0.0" />
-
-  <!--- Run Rviz-->
-  <node pkg="rviz" type="rviz" name="rviz_ndt" args="-d $(find ndt_localizer)/cfgs/rock-auto.rviz" />
-
-  <!--- MapLoader -->    
-  <arg name="map" default="iros_stage0.pcd" />
-  <arg name="pcd_path"  default="/home/ibrahim/iros22_data_and_stuff/PCD/$(arg map)"/> 
 
   <arg name="map_topic" default="/points_map"/>
 
@@ -29,26 +30,28 @@
     <param name="z" value="$(arg z)" />
   </node>
 
-  <arg name="leaf_size" default="3.0" />
-  <arg name="resolution" default="3.0" doc="The ND voxel grid resolution" />
-
-  <arg name="sync" default="false" />
-  <arg name="node_name" default="voxel_grid_filter" />
-  <arg name="points_topic" default="/thorvald_001/velodyne_points" />
+  <!-- ######################### points_downsample ######################### -->
+  <arg name="points_topic" default="/os_cloud_node/points" /> 
+  <arg name="leaf_size" default="2" />
+  <arg name="sync" default="false" />  
   <arg name="output_log" default="false" />
 
-  <node pkg="ndt_localizer" name="$(arg node_name)" type="$(arg node_name)" output="screen">
+  <node pkg="ndt_localizer" name="voxel_grid_filter" type="voxel_grid_filter" output="screen">
     <param name="points_topic" value="$(arg points_topic)" />
     <remap from="/points_raw" to="/sync_drivers/points_raw" if="$(arg sync)" />
     <param name="output_log" value="$(arg output_log)" />
     <param name="leaf_size" value="$(arg leaf_size)" />
   </node>
 
-  <!-- tf -->
+
+  <!-- ################################ tf ################################ -->
   <arg name="base_frame" default="base_link" doc="Vehicle reference frame" />
   <node pkg="tf2_ros" type="static_transform_publisher" name="world_to_map" args="0 0 0 0 0 0 world map" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="localizer_to_base_link" args="0 0 1.6 0 0 0 base_link velodyne"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_odom"  args="0 0 0 0 0 0 map odom" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="baselink_to_os_sensor"  args="0 0 1.0 0 0 0 base_link os_sensor" />
 
+
+  <!-- ########################### ndt_localizer ########################### -->
   <arg name="input_sensor_points_topic" default="/filtered_points" doc="Sensor points topic"/>
   <arg name="input_initial_pose_topic" default="/ekf_pose_with_covariance" doc="Initial position topic to align" />
   <arg name="input_map_points_topic" default="/points_map" doc="Map points topic" />
@@ -57,6 +60,7 @@
   <arg name="output_diagnostics_topic" default="diagnostics" doc="Diagnostic topic" />
   <arg name="trans_epsilon" default="0.05" doc="The maximum difference between two consecutive transformations in order to consider convergence" />
   <arg name="step_size" default="0.1" doc="The newton line search maximum step length" />
+  <arg name="resolution" default="2.0" doc="The ND voxel grid resolution" />
   <arg name="max_iterations" default="30.0" doc="The number of iterations required to calculate alignment" />
   <arg name="converged_param_transform_probability" default="3.0" doc="" />
 
@@ -76,7 +80,20 @@
     <param name="converged_param_transform_probability" value="$(arg converged_param_transform_probability)" />
   </node>
 
-  <include file="$(find ndt_localizer)/launch/lexus.launch" />
+  <!-- ######################### rosbag play/record ######################### -->
+  <arg name="bag_filename" default="kg_623b09864fdd9bd95115f1b3_test.bag" /> 
+  <arg name="bag_filepath"  default="$(find ndt_localizer)/bag/$(arg bag_filename)"/> 
+
+  <arg name="gt_topic" default="/odometry/gps" /> 
+  <arg name="play_delay" default="1" />   <!--The bag need to be played after loading the map, thus this delay is important-->
+  <arg name="play_rate" default="1.0" />
+  <arg name="output_bag_name" default="traj_$(arg bag_filename)"/>
+
+  <node pkg="rosbag" type="play" name="rosbag_play_gt_points"
+	args="'$(arg bag_filepath)' --delay '$(arg play_delay)' --rate '$(arg play_rate)' --clock --topics '$(arg points_topic)' '$(arg gt_topic)'" />
+
+ <node pkg="rosbag" type="record" name="rosbag_record_gt_ndt_pose"
+       args="record -O '$(find ndt_localizer)/bag/$(arg output_bag_name)' /ndt_pose '$(arg gt_topic)'"/>  
 
 </launch>
 
