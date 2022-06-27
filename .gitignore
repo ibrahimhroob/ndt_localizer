@@ -2,3 +2,6 @@
 build
 *.pcd
 *.bag
+results/*
+*.txt
+*.active
