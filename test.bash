@@ -11,7 +11,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 DELAY=10.0
 T_MAX_DIFF=0.1
-N_TO_ALIGN=5000
+N_TO_ALIGN=200
 
 #source catkin workspace
 source $CW_DIR/devel/setup.bash
@@ -27,7 +27,7 @@ for map in ${maps[@]}; do
         echo "========= Map: [$map].pcd with bag: [$bag].bag ========="
         echo 'Doing ndt magic in the background'
         # the output of ndt will be saved into a rosbag called traj_[bag name]
-        #roslaunch ndt_localizer ktima.launch map_id:=$map.pcd bag_filename:=$bag.bag play_delay:=$DELAY > ndt_log.txt
+        # roslaunch ndt_localizer ktima.launch map_id:=$map.pcd bag_filename:=$bag.bag play_delay:=$DELAY > ndt_log.txt
 
         MAP_BAG_DIR=$RES_DIR/$map/$bag\_bag
         MAP_BAG_ID=$map\_$bag
@@ -55,24 +55,26 @@ for map in ${maps[@]}; do
         mv ndt_pose.tum $MAP_BAG_DIR/$NDT
         mv Odometry.tum $MAP_BAG_DIR/$SLAM
 
-        # https://github.com/MichaelGrupp/evo/issues/20 
+        https://github.com/MichaelGrupp/evo/issues/20 
         evo_ape tum $MAP_BAG_DIR/$GT \
                     $MAP_BAG_DIR/$SLAM \
-                    --plot_mode xy -a\
+                    --plot_mode xy \
                     --t_max_diff 0.01 \
-                    --t_offset -$DELAY \
+                    --t_offset 0 \
                     --align_origin \
+                    --n_to_align $N_TO_ALIGN \
                     --save_results $RES_DIR_ZIP/slam_$MAP_BAG_ID.zip \
                     --save_plot $MAP_BAG_DIR/slam_$MAP_BAG_ID.pdf
 
         evo_ape tum $MAP_BAG_DIR/$GT \
                     $MAP_BAG_DIR/$NDT \
-                    --plot_mode xy -a\
+                    --plot_mode xy \
                     --t_max_diff 0.1 \
-                    --t_offset -$DELAY \
                     --align_origin \
+                    --t_offset -$DELAY \
+                    --n_to_align $N_TO_ALIGN \
                     --save_results $RES_DIR_ZIP/ndt_$MAP_BAG_ID.zip \
-                    --save_plot $MAP_BAG_DIR/ndt_$MAP_BAG_ID.pdf
+                    --save_plot $MAP_BAG_DIR/ndt_$MAP_BAG_ID.pdf 
 
     done
     echo '***********'
